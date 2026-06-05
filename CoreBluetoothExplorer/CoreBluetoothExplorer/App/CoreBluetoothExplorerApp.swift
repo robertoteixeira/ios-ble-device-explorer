@@ -11,7 +11,7 @@ import SwiftUI
 struct CoreBluetoothExplorerApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            DeviceScannerView()
         }
     }
 }
