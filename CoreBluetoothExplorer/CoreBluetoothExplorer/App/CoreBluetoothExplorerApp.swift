@@ -9,9 +9,11 @@ import SwiftUI
 
 @main
 struct CoreBluetoothExplorerApp: App {
+    @StateObject private var bleCentralManager = BLECentralManager()
+    
     var body: some Scene {
         WindowGroup {
-            DeviceScannerView()
+            DeviceScannerView(bleCentralManager: bleCentralManager)
         }
     }
 }
