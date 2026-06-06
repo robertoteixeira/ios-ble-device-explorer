@@ -16,6 +16,7 @@ final class BLECentralManager: NSObject, ObservableObject {
     
     private var centralManager: CBCentralManager?
     private var discoveredPeripherals: [UUID: CBPeripheral] = [:]
+    private var connectedPeripheral: CBPeripheral?
     
     override init() {
         super.init()
@@ -27,6 +28,8 @@ final class BLECentralManager: NSObject, ObservableObject {
         
         discoveredDevices.removeAll()
         discoveredPeripherals.removeAll()
+        services.removeAll()
+        connectedPeripheral = nil
         
         connectionState = .scanning
         
@@ -103,7 +106,13 @@ extension BLECentralManager: CBCentralManagerDelegate {
         _ central: CBCentralManager,
         didConnect peripheral: CBPeripheral
     ) {
-        connectionState = .connected
+        connectedPeripheral = peripheral
+        peripheral.delegate = self
+        
+        connectionState = .discoveringServices
+        services.removeAll()
+        
+        peripheral.discoverServices(nil)
     }
     
     func centralManager(
@@ -119,10 +128,67 @@ extension BLECentralManager: CBCentralManagerDelegate {
         didDisconnectPeripheral peripheral: CBPeripheral,
         error: Error?
     ) {
+        connectedPeripheral = nil
+        
         if let error {
             connectionState = .failed(error.localizedDescription)
         } else {
             connectionState = .disconnected
+        }
+    }
+}
+
+// MARK: - CBPeripheralDelegate
+extension BLECentralManager: CBPeripheralDelegate {
+    func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
+        if let error {
+            connectionState = .failed(error.localizedDescription)
+            return
+        }
+        
+        let discoveredServices = peripheral.services ?? []
+        
+        services = discoveredServices.map {
+            BLEService(service: $0)
+        }
+        
+        guard !discoveredServices.isEmpty else {
+            connectionState = .ready
+            return
+        }
+        
+        connectionState = .discoveringCharacteristics
+        
+        for service in discoveredServices {
+            peripheral.discoverCharacteristics(nil, for: service)
+        }
+    }
+    
+    func peripheral(
+        _ peripheral: CBPeripheral,
+        didDiscoverCharacteristicsFor service: CBService,
+        error: Error?
+    ) {
+        if let error {
+            connectionState = .failed(error.localizedDescription)
+            return
+        }
+        
+        let characteristics = service.characteristics ?? []
+        let mappedCharacteristics = characteristics.map {
+            BLECharacteristic(characteristic: $0)
+        }
+        
+        if let index = services.firstIndex(where: { $0.uuid == service.uuid.uuidString }) {
+            services[index].characteristics = mappedCharacteristics
+        }
+        
+        let allServicesHaveCharacteristics = peripheral.services?.allSatisfy { service in
+            service.characteristics != nil
+        } ?? true
+        
+        if allServicesHaveCharacteristics {
+            connectionState = .ready
         }
     }
 }

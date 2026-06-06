@@ -14,11 +14,11 @@ struct BLECharacteristic: Identifiable, Equatable {
     let properties: [String]
     let latestValue: Data?
     
-    init(characteristc: CBCharacteristic) {
-        self.id = characteristc.uuid.uuidString
-        self.uuid = characteristc.uuid.uuidString
-        self.properties = characteristc.properties.displayNames
-        self.latestValue = characteristc.value
+    init(characteristic: CBCharacteristic) {
+        self.id = characteristic.uuid.uuidString
+        self.uuid = characteristic.uuid.uuidString
+        self.properties = characteristic.properties.displayNames
+        self.latestValue = characteristic.value
     }
 }
 
