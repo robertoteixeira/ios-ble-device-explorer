@@ -12,6 +12,7 @@ final class BLECentralManager: NSObject, ObservableObject {
     @Published private(set) var bluetoothState: BluetoothState = .unknown
     @Published private(set) var connectionState: BLEConnectionState = .disconnected
     @Published private(set) var discoveredDevices: [BLEDevice] = []
+    @Published private(set) var services: [BLEService] = []
     
     private var centralManager: CBCentralManager?
     private var discoveredPeripherals: [UUID: CBPeripheral] = [:]
