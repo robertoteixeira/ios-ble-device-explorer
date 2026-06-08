@@ -1,5 +1,5 @@
 //
-//  BLEServiceSectionView.swift.swift
+//  BLEServiceSectionView.swift
 //  CoreBluetoothExplorer
 //
 //  Created by Roberto Teixeira on 06/06/2026.
@@ -9,6 +9,7 @@ import SwiftUI
 
 struct BLEServiceSectionView: View {
     let service: BLEService
+    let onReadCharacteristic: (BLECharacteristic) -> Void
     
     var body: some View {
         Section {
@@ -29,6 +30,26 @@ struct BLEServiceSectionView: View {
                             Text(characteristic.properties.joined(separator: ", "))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
+                        }
+                        
+                        if let latestValue = characteristic.latestValue {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Value")
+                                    .font(.caption)
+                                    .bold()
+                                
+                                Text(latestValue.readableDisplay)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .textSelection(.enabled)
+                            }
+                        }
+                        
+                        if characteristic.properties.contains("Read") {
+                            Button("Read") {
+                                onReadCharacteristic(characteristic)
+                            }
+                            .font(.caption)
                         }
                     }
                     .padding(.vertical, 4)

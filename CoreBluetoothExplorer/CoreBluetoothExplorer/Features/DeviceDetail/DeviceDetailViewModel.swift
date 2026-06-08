@@ -1,11 +1,12 @@
 //
-//  DeviceDetailViewModel.swift.swift
+//  DeviceDetailViewModel.swift
 //  CoreBluetoothExplorer
 //
 //  Created by Roberto Teixeira on 06/06/2026.
 //
 
 import Foundation
+import Combine
 
 @MainActor
 final class DeviceDetailViewModel: ObservableObject {
@@ -30,5 +31,9 @@ final class DeviceDetailViewModel: ObservableObject {
         bleCentralManager.$services
             .receive(on: DispatchQueue.main)
             .assign(to: &$services)
+    }
+    
+    func readCharacteristic(_ characteristic: BLECharacteristic) {
+        bleCentralManager.readCharacteristic(characteristic)
     }
 }

@@ -1,5 +1,5 @@
 //
-//  DeviceDetailView.swift.swift
+//  DeviceDetailView.swift
 //  CoreBluetoothExplorer
 //
 //  Created by Roberto Teixeira on 06/06/2026.
@@ -39,7 +39,12 @@ struct DeviceDetailView: View {
                 }
             } else {
                 ForEach(viewModel.services) { service in
-                    BLEServiceSectionView(service: service)
+                    BLEServiceSectionView(
+                        service: service,
+                        onReadCharacteristic: { characteristic in
+                            viewModel.readCharacteristic(characteristic)
+                        }
+                    )
                 }
             }
         }
