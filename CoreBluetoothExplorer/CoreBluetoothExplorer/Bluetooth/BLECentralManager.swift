@@ -17,6 +17,7 @@ final class BLECentralManager: NSObject, ObservableObject {
     private var centralManager: CBCentralManager?
     private var discoveredPeripherals: [UUID: CBPeripheral] = [:]
     private var connectedPeripheral: CBPeripheral?
+    private var discoveredCharacteristics: [String: CBCharacteristic] = [:]
     
     override init() {
         super.init()
@@ -30,6 +31,7 @@ final class BLECentralManager: NSObject, ObservableObject {
         discoveredPeripherals.removeAll()
         services.removeAll()
         connectedPeripheral = nil
+        discoveredCharacteristics.removeAll()
         
         connectionState = .scanning
         
@@ -58,6 +60,25 @@ final class BLECentralManager: NSObject, ObservableObject {
         stopScanning()
         connectionState = .connecting
         centralManager?.connect(peripheral)
+    }
+    
+    func readCharacteristic(_ characteristic: BLECharacteristic) {
+        guard let connectedPeripheral else {
+            connectionState = .failed("No connected peripheral")
+            return
+        }
+        
+        guard let cbCharacteristic = discoveredCharacteristics[characteristic.uuid] else {
+            connectionState = .failed("Characteristic not found")
+            return
+        }
+        
+        guard cbCharacteristic.properties.contains(.read) else {
+            connectionState = .failed("Characteristic does not support read")
+            return
+        }
+        
+        connectedPeripheral.readValue(for: cbCharacteristic)
     }
 }
 
@@ -175,6 +196,11 @@ extension BLECentralManager: CBPeripheralDelegate {
         }
         
         let characteristics = service.characteristics ?? []
+        
+        for characteristic in characteristics {
+            discoveredCharacteristics[characteristic.uuid.uuidString] = characteristic
+        }
+        
         let mappedCharacteristics = characteristics.map {
             BLECharacteristic(characteristic: $0)
         }
@@ -189,6 +215,33 @@ extension BLECentralManager: CBPeripheralDelegate {
         
         if allServicesHaveCharacteristics {
             connectionState = .ready
+        }
+    }
+    
+    func peripheral(
+        _ peripheral: CBPeripheral,
+        didUpdateValueFor characteristic: CBCharacteristic,
+        error: Error?
+    ) {
+        if let error {
+            connectionState = .failed(error.localizedDescription)
+            return
+        }
+        
+        let updatedCharacteristic = BLECharacteristic(characteristic: characteristic)
+        
+        services = services.map { service in
+            var updatedService = service
+            
+            updatedService.characteristics = service.characteristics.map { existingCharacteristic in
+                if existingCharacteristic.uuid == updatedCharacteristic.uuid {
+                    return updatedCharacteristic
+                }
+                
+                return existingCharacteristic
+            }
+            
+            return updatedService
         }
     }
 }
