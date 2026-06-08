@@ -14,7 +14,7 @@ final class DeviceScannerViewModel: ObservableObject {
     @Published private(set) var connectionState: BLEConnectionState = .disconnected
     @Published private(set) var devices: [BLEDevice] = []
     
-    private let bleCentralManager: BLECentralManager
+    let bleCentralManager: BLECentralManager
     private var cancellables: Set<AnyCancellable> = []
     
     init(bleCentralManager: BLECentralManager) {

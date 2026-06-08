@@ -24,12 +24,17 @@ struct DeviceScannerView: View {
                 statusHeader
                 
                 List(viewModel.devices) { device in
-                    Button {
-                        viewModel.connect(to: device)
+                    NavigationLink {
+                        DeviceDetailView(
+                            device: device,
+                            bleCentralManager: viewModel.bleCentralManager
+                        )
+                        .onAppear {
+                            viewModel.connect(to: device)
+                        }
                     } label: {
                         BLEDeviceRowView(device: device)
                     }
-                    .buttonStyle(.plain)
                 }
             }
             .navigationTitle("BLE Explorer")
