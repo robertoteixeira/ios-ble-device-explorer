@@ -43,6 +43,9 @@ struct DeviceDetailView: View {
                         service: service,
                         onReadCharacteristic: { characteristic in
                             viewModel.readCharacteristic(characteristic)
+                        },
+                        onToggleNotify: { characteristic in
+                            viewModel.toggleNotify(for: characteristic)
                         }
                     )
                 }

@@ -36,4 +36,8 @@ final class DeviceDetailViewModel: ObservableObject {
     func readCharacteristic(_ characteristic: BLECharacteristic) {
         bleCentralManager.readCharacteristic(characteristic)
     }
+    
+    func toggleNotify(for characteristic: BLECharacteristic) {
+        bleCentralManager.toggleNotify(for: characteristic)
+    }
 }

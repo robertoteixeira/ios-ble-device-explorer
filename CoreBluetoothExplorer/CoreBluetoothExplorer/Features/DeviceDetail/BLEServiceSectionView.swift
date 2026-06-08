@@ -10,6 +10,7 @@ import SwiftUI
 struct BLEServiceSectionView: View {
     let service: BLEService
     let onReadCharacteristic: (BLECharacteristic) -> Void
+    let onToggleNotify: (BLECharacteristic) -> Void
     
     var body: some View {
         Section {
@@ -48,6 +49,13 @@ struct BLEServiceSectionView: View {
                         if characteristic.properties.contains("Read") {
                             Button("Read") {
                                 onReadCharacteristic(characteristic)
+                            }
+                            .font(.caption)
+                        }
+                        
+                        if characteristic.properties.contains("Notify") || characteristic.properties.contains("Indicate") {
+                            Button("Notify") {
+                                onToggleNotify(characteristic)
                             }
                             .font(.caption)
                         }
