@@ -80,6 +80,31 @@ final class BLECentralManager: NSObject, ObservableObject {
         
         connectedPeripheral.readValue(for: cbCharacteristic)
     }
+    
+    func toggleNotify(for characteristic: BLECharacteristic) {
+        guard let connectedPeripheral else {
+            connectionState = .failed("No connected peripheral")
+            return
+        }
+        
+        guard let cbCharacteristic = discoveredCharacteristics[characteristic.uuid] else {
+            connectionState = .failed("Characteristic not found")
+            return
+        }
+        
+        let supportsNotify = cbCharacteristic.properties.contains(CBCharacteristicProperties.notify)
+        let supportsIndicate = cbCharacteristic.properties.contains(CBCharacteristicProperties.indicate)
+        
+        guard supportsNotify || supportsIndicate else {
+            connectionState = .failed("Characteristic does not support nofity/indicate")
+            return
+        }
+        
+        connectedPeripheral.setNotifyValue(
+            !cbCharacteristic.isNotifying,
+            for: cbCharacteristic
+        )
+    }
 }
 
 // MARK: - CBCentralManagerDelegate
