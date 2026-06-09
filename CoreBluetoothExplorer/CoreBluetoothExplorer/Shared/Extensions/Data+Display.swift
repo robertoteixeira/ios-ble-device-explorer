@@ -29,7 +29,7 @@ extension Data {
     
     var readableDisplay: String {
         if let utf8Display, !utf8Display.isEmpty {
-            return "\(hexDisplay) (\(utf8Display)"
+            return "\(hexDisplay) (\(utf8Display))"
         }
         
         return hexDisplay
