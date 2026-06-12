@@ -24,6 +24,10 @@ enum BLEValueDecoder {
             return nil
         }
         
+        guard firstByte <= 100 else {
+            return "\(firstByte)% (out of range)"
+        }
+        
         return "\(firstByte)%"
     }
     

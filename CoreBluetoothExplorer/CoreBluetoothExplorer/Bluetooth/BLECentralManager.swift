@@ -272,6 +272,32 @@ extension BLECentralManager: CBPeripheralDelegate {
             return updatedService
         }
     }
+    
+    func peripheral(
+        _ peripheral: CBPeripheral,
+        didUpdateNotificationStateFor characteristic: CBCharacteristic,
+        error: Error?
+    ) {
+        if let error {
+            connectionState = .failed(error.localizedDescription)
+            return
+        }
+        
+        let updatedCharacteristic = BLECharacteristic(characteristic: characteristic)
+        
+        services = services.map { service in
+            var updatedService = service
+            
+            updatedService.characteristics = service.characteristics.map { existingCharacteristic in
+                if existingCharacteristic.uuid == updatedCharacteristic.uuid {
+                    return updatedCharacteristic
+                }
+                
+                return existingCharacteristic
+            }
+            return updatedService
+        }
+    }
 }
 
 

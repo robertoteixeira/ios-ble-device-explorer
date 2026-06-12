@@ -13,16 +13,19 @@ struct BLECharacteristic: Identifiable, Equatable {
     let uuid: String
     let properties: [String]
     let latestValue: Data?
+    let isNotifying: Bool
     
     init(
         uuid: String,
         properties: [String],
-        latestValue: Data? = nil
+        latestValue: Data? = nil,
+        isNotifying: Bool = false
     ) {
         self.id = uuid
         self.uuid = uuid
         self.properties = properties
         self.latestValue = latestValue
+        self.isNotifying = isNotifying
     }
     
     init(characteristic: CBCharacteristic) {
@@ -30,6 +33,7 @@ struct BLECharacteristic: Identifiable, Equatable {
         self.uuid = characteristic.uuid.uuidString
         self.properties = characteristic.properties.displayNames
         self.latestValue = characteristic.value
+        self.isNotifying = characteristic.isNotifying
     }
 }
 

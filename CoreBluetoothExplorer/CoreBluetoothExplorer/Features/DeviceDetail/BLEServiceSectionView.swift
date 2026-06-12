@@ -75,25 +75,19 @@ struct BLEServiceSectionView: View {
                         
                         HStack(spacing: 16) {
                             if characteristic.properties.contains("Read") {
-                                Button {
+                                Button("Read") {
                                     onReadCharacteristic(characteristic)
-                                } label: {
-                                    Image(systemName: "arrow.down.doc")
-                                        .resizable()
-                                        .scaledToFit()
-                                        .frame(width: 20, height: 20)
                                 }
                                 .font(.caption)
                             }
                             
                             if characteristic.properties.contains("Notify") || characteristic.properties.contains("Indicate") {
-                                Button {
+                                Text(characteristic.isNotifying ? "Notifications enabled" : "Notifications disabled")
+                                    .font(.caption2)
+                                    .foregroundStyle(characteristic.isNotifying ? .green : .secondary)
+                                
+                                Button(characteristic.isNotifying ? "Stop Notify" : "Notify") {
                                     onToggleNotify(characteristic)
-                                } label: {
-                                    Image(systemName: "dot.radiowaves.left.and.right")
-                                        .resizable()
-                                        .scaledToFit()
-                                        .frame(width: 20, height: 20)
                                 }
                                 .font(.caption)
                             }
