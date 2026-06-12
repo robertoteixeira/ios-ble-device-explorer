@@ -19,9 +19,17 @@ struct BLEServiceSectionView: View {
             } else {
                 ForEach(service.characteristics) { characteristic in
                     VStack(alignment: .leading, spacing: 6) {
-                        Text(characteristic.uuid)
-                            .font(.subheadline)
-                            .bold()
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(KnownBLEUUID.displayName(for: characteristic.uuid))
+                                .font(.headline)
+                                .bold()
+                            
+                            if KnownBLEUUID.name(for: characteristic.uuid) != nil {
+                                Text(characteristic.uuid)
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
                         
                         if characteristic.properties.isEmpty {
                             Text("No properties")
@@ -64,7 +72,7 @@ struct BLEServiceSectionView: View {
                 }
             }
         } header: {
-            Text("Service \(service.uuid)")
+            Text("Service \(KnownBLEUUID.displayName(for: service.uuid))")
         }
     }
 }
