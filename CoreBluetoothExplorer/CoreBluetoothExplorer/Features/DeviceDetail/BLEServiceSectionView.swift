@@ -47,10 +47,25 @@ struct BLEServiceSectionView: View {
                                     .font(.caption)
                                     .bold()
                                 
-                                Text(latestValue.readableDisplay)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                    .textSelection(.enabled)
+                                if let decodedValue = BLEValueDecoder.decodedValue(
+                                    uuid: characteristic.uuid,
+                                    data: latestValue
+                                ) {
+                                    Text(decodedValue)
+                                        .font(.caption)
+                                        .foregroundStyle(.primary)
+                                        .textSelection(.enabled)
+                                    
+                                    Text("Raw: \(latestValue.hexDisplay)")
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                        .textSelection(.enabled)
+                                } else {
+                                    Text(latestValue.readableDisplay)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                        .textSelection(.enabled)
+                                }
                             }
                         }
                         
