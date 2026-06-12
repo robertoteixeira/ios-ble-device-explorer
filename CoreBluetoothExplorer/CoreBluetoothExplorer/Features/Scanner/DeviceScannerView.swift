@@ -46,6 +46,7 @@ struct DeviceScannerView: View {
                 ToolbarItem(placement: .topBarLeading) {
                     Menu {
                         Toggle("Show Unknown Devices", isOn: $viewModel.showsUnknownDevices)
+                        Toggle("Only Connectable Devices", isOn: $viewModel.showsOnlyConnectableDevices)
                     } label: {
                         Image(systemName: "line.3.horizontal.decrease.circle")
                     }
@@ -122,6 +123,16 @@ struct DeviceScannerView_Previews: PreviewProvider {
                 )
             )
             .previewDisplayName("Filtered")
+            
+            DeviceScannerView(
+                viewModel: DeviceScannerViewModel(
+                    bluetoothState: .poweredOn,
+                    connectionState: .disconnected,
+                    devices: PreviewFixtures.devices,
+                    showsOnlyConnectableDevices: true
+                )
+            )
+            .previewDisplayName("Connectable Only")
             
             DeviceScannerView(
                 viewModel: DeviceScannerViewModel(
