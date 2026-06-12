@@ -16,6 +16,7 @@ final class BLECentralManager: NSObject, ObservableObject {
     
     private var centralManager: CBCentralManager?
     private var discoveredPeripherals: [UUID: CBPeripheral] = [:]
+    private var connectingPeripheral: CBPeripheral?
     private var connectedPeripheral: CBPeripheral?
     private var discoveredCharacteristics: [String: CBCharacteristic] = [:]
     
@@ -61,8 +62,24 @@ final class BLECentralManager: NSObject, ObservableObject {
         }
         
         stopScanning()
+        connectingPeripheral = peripheral
         connectionState = .connecting
         centralManager?.connect(peripheral)
+    }
+    
+    func disconnect() {
+        if let connectingPeripheral {
+            centralManager?.cancelPeripheralConnection(connectingPeripheral)
+            self.connectingPeripheral = nil
+        }
+        
+        if let connectedPeripheral {
+            centralManager?.cancelPeripheralConnection(connectedPeripheral)
+        } else {
+            connectionState = .disconnected
+            services.removeAll()
+            discoveredCharacteristics.removeAll()
+        }
     }
     
     func readCharacteristic(_ characteristic: BLECharacteristic) {
@@ -155,6 +172,7 @@ extension BLECentralManager: CBCentralManagerDelegate {
         _ central: CBCentralManager,
         didConnect peripheral: CBPeripheral
     ) {
+        connectingPeripheral = nil
         connectedPeripheral = peripheral
         peripheral.delegate = self
         
@@ -169,6 +187,7 @@ extension BLECentralManager: CBCentralManagerDelegate {
         didFailToConnect peripheral: CBPeripheral,
         error: Error?
     ) {
+        connectingPeripheral = nil
         connectionState = .failed(error?.localizedDescription ?? "Failed to connect")
     }
     
@@ -177,7 +196,10 @@ extension BLECentralManager: CBCentralManagerDelegate {
         didDisconnectPeripheral peripheral: CBPeripheral,
         error: Error?
     ) {
+        connectingPeripheral = nil
         connectedPeripheral = nil
+        services.removeAll()
+        discoveredCharacteristics.removeAll()
         
         if let error {
             connectionState = .failed(error.localizedDescription)

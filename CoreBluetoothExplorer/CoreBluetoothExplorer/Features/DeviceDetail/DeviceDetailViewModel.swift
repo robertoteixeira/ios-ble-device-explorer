@@ -51,4 +51,8 @@ final class DeviceDetailViewModel: ObservableObject {
     func toggleNotify(for characteristic: BLECharacteristic) {
         bleCentralManager?.toggleNotify(for: characteristic)
     }
+    
+    func disconnect() {
+        bleCentralManager?.disconnect()
+    }
 }

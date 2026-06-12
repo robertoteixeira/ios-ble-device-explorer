@@ -56,6 +56,24 @@ struct DeviceDetailView: View {
             }
         }
         .navigationTitle("Device Details")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                if showsDisconnectButton {
+                    Button("Disconnect") {
+                        viewModel.disconnect()
+                    }
+                }
+            }
+        }
+    }
+    
+    private var showsDisconnectButton: Bool {
+        switch viewModel.connectionState {
+        case .connecting, .connected, .discoveringServices, .discoveringCharacteristics, .ready:
+            return true
+        case .disconnected, .scanning, .failed:
+            return false
+        }
     }
 }
 
