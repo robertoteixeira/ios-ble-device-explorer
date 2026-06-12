@@ -23,7 +23,7 @@ struct DeviceScannerView: View {
             VStack(spacing: 0) {
                 statusHeader
                 
-                List(viewModel.devices) { device in
+                List(viewModel.visibleDevices) { device in
                     NavigationLink {
                         DeviceDetailView(
                             device: device,
@@ -39,6 +39,13 @@ struct DeviceScannerView: View {
             }
             .navigationTitle("BLE Explorer")
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Menu {
+                        Toggle("Show Unknown Devices", isOn: $viewModel.showsUnknownDevices)
+                    } label: {
+                        Image(systemName: "line.3.horizontal.decrease.circle")
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     scanButton
                 }

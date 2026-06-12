@@ -13,6 +13,7 @@ final class DeviceScannerViewModel: ObservableObject {
     @Published private(set) var bluetoothState: BluetoothState = .unknown
     @Published private(set) var connectionState: BLEConnectionState = .disconnected
     @Published private(set) var devices: [BLEDevice] = []
+    @Published var showsUnknownDevices = true
     
     let bleCentralManager: BLECentralManager
     private var cancellables: Set<AnyCancellable> = []
@@ -31,6 +32,16 @@ final class DeviceScannerViewModel: ObservableObject {
         bleCentralManager.$discoveredDevices
             .receive(on: DispatchQueue.main)
             .assign(to: &$devices)
+    }
+    
+    var visibleDevices: [BLEDevice] {
+        guard showsUnknownDevices == false else {
+            return devices
+        }
+        
+        return devices.filter { device in
+            device.name.isEmpty == false
+        }
     }
     
     func startScanning() {
