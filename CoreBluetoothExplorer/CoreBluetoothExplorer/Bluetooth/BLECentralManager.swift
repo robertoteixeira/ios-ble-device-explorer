@@ -125,6 +125,39 @@ final class BLECentralManager: NSObject, ObservableObject {
             for: cbCharacteristic
         )
     }
+    
+    func writeCharacteristic(_ characteristic: BLECharacteristic, hexString: String) {
+        guard let value = HexDataParser.data(from: hexString) else {
+            connectionState = .failed("Invalid hex value")
+            return
+        }
+        
+        guard let connectedPeripheral else {
+            connectionState = .failed("No connected peripheral")
+            return
+        }
+        
+        guard let cbCharacteristic = discoveredCharacteristics[characteristic.uuid] else {
+            connectionState = .failed("Characteristic not found")
+            return
+        }
+        
+        let supportsWrite = cbCharacteristic.properties.contains(.write)
+        let supportsWriteWithoutResponse = cbCharacteristic.properties.contains(.writeWithoutResponse)
+        
+        guard supportsWrite || supportsWriteWithoutResponse else {
+            connectionState = .failed("Characterist does not support write")
+            return
+        }
+        
+        let writeType: CBCharacteristicWriteType = supportsWrite ? .withResponse : .withoutResponse
+        
+        connectedPeripheral.writeValue(
+            value,
+            for: cbCharacteristic,
+            type: writeType
+        )
+    }
 }
 
 // MARK: - CBCentralManagerDelegate
@@ -319,6 +352,19 @@ extension BLECentralManager: CBPeripheralDelegate {
             }
             return updatedService
         }
+    }
+    
+    func peripheral(
+        _ peripheral: CBPeripheral,
+        didWriteValueFor characteristic: CBCharacteristic,
+        error: Error?
+    ) {
+        if let error {
+            connectionState = .failed(error.localizedDescription)
+            return
+        }
+        
+        connectionState = .ready
     }
 }
 

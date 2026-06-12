@@ -52,6 +52,10 @@ final class DeviceDetailViewModel: ObservableObject {
         bleCentralManager?.toggleNotify(for: characteristic)
     }
     
+    func writeCharacteristic(_ characteristic: BLECharacteristic, hexString: String) {
+        bleCentralManager?.writeCharacteristic(characteristic, hexString: hexString)
+    }
+    
     func disconnect() {
         bleCentralManager?.disconnect()
     }

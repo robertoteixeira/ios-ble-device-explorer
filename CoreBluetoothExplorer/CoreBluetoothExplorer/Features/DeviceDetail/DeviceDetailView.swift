@@ -50,6 +50,12 @@ struct DeviceDetailView: View {
                         },
                         onToggleNotify: { characteristic in
                             viewModel.toggleNotify(for: characteristic)
+                        },
+                        onWriteCharacteristic: { characteristic, hexString in
+                            viewModel.writeCharacteristic(
+                                characteristic,
+                                hexString: hexString
+                            )
                         }
                     )
                 }

@@ -11,6 +11,9 @@ struct BLEServiceSectionView: View {
     let service: BLEService
     let onReadCharacteristic: (BLECharacteristic) -> Void
     let onToggleNotify: (BLECharacteristic) -> Void
+    let onWriteCharacteristic: (BLECharacteristic, String) -> Void
+    
+    @State private var writeHexValues: [String: String] = [:]
     
     var body: some View {
         Section {
@@ -91,6 +94,42 @@ struct BLEServiceSectionView: View {
                                 }
                                 .font(.caption)
                             }
+                            
+                            if characteristic.properties.contains("Write") || characteristic.properties.contains("Write Without Response") {
+                                HStack(spacing: 8) {
+                                    TextField(
+                                        "Hex Bytes",
+                                        text: Binding(
+                                            get: {
+                                                writeHexValues[characteristic.id] ?? ""
+                                            },
+                                            set: { newValue in
+                                                writeHexValues[characteristic.id] = newValue
+                                            }
+                                        )
+                                    )
+                                    .textInputAutocapitalization(.characters)
+                                    .autocorrectionDisabled()
+                                    .textFieldStyle(.roundedBorder)
+                                    .font(.caption)
+                                    
+                                    Button("Write") {
+                                        onWriteCharacteristic(
+                                            characteristic,
+                                            writeHexValues[characteristic.id] ?? ""
+                                        )
+                                    }
+                                    .font(.caption)
+                                    .disabled(!isValidHexValue(for: characteristic))
+                                    
+                                    if shouldShowInvalidHexHint(for: characteristic) {
+                                        Text("Enter an even number of hex digits")
+                                            .font(.caption2)
+                                            .foregroundStyle(.red)
+                                    }
+                                    
+                                }
+                            }
                         }
                         .padding(.top, 16)
                     }
@@ -100,6 +139,26 @@ struct BLEServiceSectionView: View {
         } header: {
             Text("Service \(KnownBLEUUID.displayName(for: service.uuid))")
         }
+    }
+    
+    private func isValidHexValue(for characteristic: BLECharacteristic) -> Bool {
+        guard let hexValue = writeHexValues[characteristic.id] else {
+            return false
+        }
+        
+        return HexDataParser.data(from: hexValue) != nil
+    }
+    
+    private func shouldShowInvalidHexHint(for characteristic: BLECharacteristic) -> Bool {
+        guard let hexValue = writeHexValues[characteristic.id] else {
+            return false
+        }
+        
+        guard hexValue.isEmpty == false else {
+            return false
+        }
+        
+        return HexDataParser.data(from: hexValue) == nil
     }
 }
 
@@ -112,7 +171,8 @@ struct BLEServiceSectionView_Previews: PreviewProvider {
                         BLEServiceSectionView(
                             service: service,
                             onReadCharacteristic: { _ in },
-                            onToggleNotify: { _ in }
+                            onToggleNotify: { _ in },
+                            onWriteCharacteristic: { _, _ in }
                         )
                     }
                 }
@@ -125,7 +185,8 @@ struct BLEServiceSectionView_Previews: PreviewProvider {
                     BLEServiceSectionView(
                         service: BLEService(uuid: "1234"),
                         onReadCharacteristic: { _ in },
-                        onToggleNotify: { _ in }
+                        onToggleNotify: { _ in },
+                        onWriteCharacteristic: { _, _ in }
                     )
                 }
             }
