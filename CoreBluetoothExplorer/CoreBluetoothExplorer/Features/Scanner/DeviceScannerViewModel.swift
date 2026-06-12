@@ -34,6 +34,19 @@ final class DeviceScannerViewModel: ObservableObject {
             .assign(to: &$devices)
     }
     
+    init(
+        bluetoothState: BluetoothState,
+        connectionState: BLEConnectionState,
+        devices: [BLEDevice],
+        showsUnknownDevices: Bool = true
+    ) {
+        self.bluetoothState = bluetoothState
+        self.connectionState = connectionState
+        self.devices = devices
+        self.showsUnknownDevices = showsUnknownDevices
+        self.bleCentralManager = BLECentralManager(startsCentralManager: false)
+    }
+    
     var visibleDevices: [BLEDevice] {
         guard showsUnknownDevices == false else {
             return devices

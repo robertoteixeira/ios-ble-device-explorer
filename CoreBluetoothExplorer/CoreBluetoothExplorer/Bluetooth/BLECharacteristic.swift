@@ -14,6 +14,17 @@ struct BLECharacteristic: Identifiable, Equatable {
     let properties: [String]
     let latestValue: Data?
     
+    init(
+        uuid: String,
+        properties: [String],
+        latestValue: Data? = nil
+    ) {
+        self.id = uuid
+        self.uuid = uuid
+        self.properties = properties
+        self.latestValue = latestValue
+    }
+    
     init(characteristic: CBCharacteristic) {
         self.id = characteristic.uuid.uuidString
         self.uuid = characteristic.uuid.uuidString

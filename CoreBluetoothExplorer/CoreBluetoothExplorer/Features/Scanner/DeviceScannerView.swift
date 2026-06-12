@@ -18,6 +18,10 @@ struct DeviceScannerView: View {
         )
     }
     
+    init(viewModel: DeviceScannerViewModel) {
+        _viewModel = StateObject(wrappedValue: viewModel)
+    }
+    
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
@@ -94,5 +98,39 @@ struct DeviceScannerView: View {
             Text(viewModel.connectionState == .scanning ? "Stop" : "Scan")
         }
         .disabled(viewModel.bluetoothState != .poweredOn)
+    }
+}
+
+struct DeviceScannerView_Previews: PreviewProvider {
+    static var previews: some View {
+        Group {
+            DeviceScannerView(
+                viewModel: DeviceScannerViewModel(
+                    bluetoothState: .poweredOn,
+                    connectionState: .scanning,
+                    devices: PreviewFixtures.devices
+                )
+            )
+            .previewDisplayName("Scanning")
+            
+            DeviceScannerView(
+                viewModel: DeviceScannerViewModel(
+                    bluetoothState: .poweredOn,
+                    connectionState: .disconnected,
+                    devices: PreviewFixtures.devices,
+                    showsUnknownDevices: false
+                )
+            )
+            .previewDisplayName("Filtered")
+            
+            DeviceScannerView(
+                viewModel: DeviceScannerViewModel(
+                    bluetoothState: .poweredOff,
+                    connectionState: .disconnected,
+                    devices: []
+                )
+            )
+            .previewDisplayName("Bluetooth Off")
+        }
     }
 }

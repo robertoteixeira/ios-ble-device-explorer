@@ -23,71 +23,119 @@ struct BLEServiceSectionView: View {
                             Text(KnownBLEUUID.displayName(for: characteristic.uuid))
                                 .font(.headline)
                                 .bold()
-                            
-                            if KnownBLEUUID.name(for: characteristic.uuid) != nil {
-                                Text(characteristic.uuid)
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                            }
                         }
                         
                         if characteristic.properties.isEmpty {
                             Text("No properties")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
+                                .background(.gray.opacity(0.1))
                         } else {
-                            Text(characteristic.properties.joined(separator: ", "))
+                            Text(characteristic.properties.joined(separator: " | "))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
+                                .padding(4)
+                                .background(.gray.opacity(0.1))
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
                         }
                         
                         if let latestValue = characteristic.latestValue {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("Value")
-                                    .font(.caption)
-                                    .bold()
-                                
-                                if let decodedValue = BLEValueDecoder.decodedValue(
-                                    uuid: characteristic.uuid,
-                                    data: latestValue
-                                ) {
-                                    Text(decodedValue)
+                                HStack(alignment: .top, spacing: 4) {
+                                    Text("Value:")
+                                        .font(.caption)
+                                        .bold()
+                                    
+                                    if let decodedValue = BLEValueDecoder.decodedValue(
+                                        uuid: characteristic.uuid,
+                                        data: latestValue
+                                    ) {
+                                        Text(decodedValue)
+                                            .font(.caption)
+                                            .foregroundStyle(.primary)
+                                            .textSelection(.enabled)
+                                    } else if let utf8Display = latestValue.utf8Display {
+                                        Text(utf8Display)
+                                            .font(.caption)
+                                            .foregroundStyle(.primary)
+                                            .textSelection(.enabled)
+                                    }
+                                }
+                                HStack(alignment: .top, spacing: 4) {
+                                    Text("Raw:")
+                                        .font(.caption)
+                                        .bold()
+                                    Text("\(latestValue.hexDisplay)")
                                         .font(.caption)
                                         .foregroundStyle(.primary)
-                                        .textSelection(.enabled)
-                                    
-                                    Text("Raw: \(latestValue.hexDisplay)")
-                                        .font(.caption2)
-                                        .foregroundStyle(.secondary)
-                                        .textSelection(.enabled)
-                                } else {
-                                    Text(latestValue.readableDisplay)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
                                         .textSelection(.enabled)
                                 }
                             }
                         }
                         
-                        if characteristic.properties.contains("Read") {
-                            Button("Read") {
-                                onReadCharacteristic(characteristic)
+                        HStack(spacing: 16) {
+                            if characteristic.properties.contains("Read") {
+                                Button {
+                                    onReadCharacteristic(characteristic)
+                                } label: {
+                                    Image(systemName: "arrow.down.doc")
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(width: 20, height: 20)
+                                }
+                                .font(.caption)
                             }
-                            .font(.caption)
-                        }
-                        
-                        if characteristic.properties.contains("Notify") || characteristic.properties.contains("Indicate") {
-                            Button("Notify") {
-                                onToggleNotify(characteristic)
+                            
+                            if characteristic.properties.contains("Notify") || characteristic.properties.contains("Indicate") {
+                                Button {
+                                    onToggleNotify(characteristic)
+                                } label: {
+                                    Image(systemName: "dot.radiowaves.left.and.right")
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(width: 20, height: 20)
+                                }
+                                .font(.caption)
                             }
-                            .font(.caption)
                         }
+                        .padding(.top, 16)
                     }
                     .padding(.vertical, 4)
                 }
             }
         } header: {
             Text("Service \(KnownBLEUUID.displayName(for: service.uuid))")
+        }
+    }
+}
+
+struct BLEServiceSectionView_Previews: PreviewProvider {
+    static var previews: some View {
+        Group {
+            NavigationStack {
+                List {
+                    ForEach(PreviewFixtures.services) { service in
+                        BLEServiceSectionView(
+                            service: service,
+                            onReadCharacteristic: { _ in },
+                            onToggleNotify: { _ in }
+                        )
+                    }
+                }
+                .navigationTitle("Services")
+            }
+            .previewDisplayName("Services")
+            
+            NavigationStack {
+                List {
+                    BLEServiceSectionView(
+                        service: BLEService(uuid: "1234"),
+                        onReadCharacteristic: { _ in },
+                        onToggleNotify: { _ in }
+                    )
+                }
+            }
+            .previewDisplayName("Empty Service")
         }
     }
 }

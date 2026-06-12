@@ -15,7 +15,7 @@ final class DeviceDetailViewModel: ObservableObject {
     
     let device: BLEDevice
     
-    private let bleCentralManager: BLECentralManager
+    private let bleCentralManager: BLECentralManager?
     
     init(
         device: BLEDevice,
@@ -33,11 +33,22 @@ final class DeviceDetailViewModel: ObservableObject {
             .assign(to: &$services)
     }
     
+    init(
+        device: BLEDevice,
+        connectionState: BLEConnectionState,
+        services: [BLEService]
+    ) {
+        self.device = device
+        self.connectionState = connectionState
+        self.services = services
+        self.bleCentralManager = nil
+    }
+    
     func readCharacteristic(_ characteristic: BLECharacteristic) {
-        bleCentralManager.readCharacteristic(characteristic)
+        bleCentralManager?.readCharacteristic(characteristic)
     }
     
     func toggleNotify(for characteristic: BLECharacteristic) {
-        bleCentralManager.toggleNotify(for: characteristic)
+        bleCentralManager?.toggleNotify(for: characteristic)
     }
 }

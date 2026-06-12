@@ -21,6 +21,10 @@ struct DeviceDetailView: View {
         )
     }
     
+    init(viewModel: DeviceDetailViewModel) {
+        _viewModel = StateObject(wrappedValue: viewModel)
+    }
+    
     var body: some View {
         List {
             Section {
@@ -52,5 +56,47 @@ struct DeviceDetailView: View {
             }
         }
         .navigationTitle("Device Details")
+    }
+}
+
+struct DeviceDetailView_Previews: PreviewProvider {
+    static var previews: some View {
+        Group {
+            NavigationStack {
+                DeviceDetailView(
+                    viewModel: DeviceDetailViewModel(
+                        device: PreviewFixtures.heartRateMonitor,
+                        connectionState: .ready,
+                        services: PreviewFixtures.services
+                    )
+                )
+            }
+            .previewDisplayName("Ready")
+            
+            NavigationStack {
+                DeviceDetailView(
+                    viewModel: DeviceDetailViewModel(
+                        device: PreviewFixtures.thermometer,
+                        connectionState: .discoveringCharacteristics,
+                        services: [
+                            BLEService(uuid: "1809")
+                        ]
+                    )
+                )
+            }
+            .previewDisplayName("Discovering")
+            
+            NavigationStack {
+                DeviceDetailView(
+                    viewModel: DeviceDetailViewModel(
+                        device: PreviewFixtures.unknownBeacon,
+                        connectionState: .failed("Connection timed out"),
+                        services: []
+                    )
+                )
+            }
+            .preferredColorScheme(.dark)
+            .previewDisplayName("No Services")
+        }
     }
 }

@@ -13,6 +13,15 @@ struct BLEService: Identifiable, Equatable {
     let uuid: String
     var characteristics: [BLECharacteristic]
     
+    init(
+        uuid: String,
+        characteristics: [BLECharacteristic] = []
+    ) {
+        self.id = uuid
+        self.uuid = uuid
+        self.characteristics = characteristics
+    }
+    
     init(service: CBService, characteristics: [BLECharacteristic] = []) {
         self.id = service.uuid.uuidString
         self.uuid = service.uuid.uuidString

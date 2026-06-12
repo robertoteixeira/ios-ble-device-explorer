@@ -35,3 +35,20 @@ struct BLEDeviceRowView: View {
         .padding(.vertical, 4)
     }
 }
+
+struct BLEDeviceRowView_Previews: PreviewProvider {
+    static var previews: some View {
+        Group {
+            List {
+                BLEDeviceRowView(device: PreviewFixtures.heartRateMonitor)
+            }
+            .previewDisplayName("Connectable")
+            
+            List {
+                BLEDeviceRowView(device: PreviewFixtures.unknownBeacon)
+            }
+            .environment(\.sizeCategory, .accessibilityExtraExtraExtraLarge)
+            .previewDisplayName("Unknown Device")
+        }
+    }
+}

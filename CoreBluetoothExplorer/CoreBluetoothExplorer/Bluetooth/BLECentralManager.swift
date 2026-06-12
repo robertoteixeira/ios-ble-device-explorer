@@ -19,9 +19,12 @@ final class BLECentralManager: NSObject, ObservableObject {
     private var connectedPeripheral: CBPeripheral?
     private var discoveredCharacteristics: [String: CBCharacteristic] = [:]
     
-    override init() {
+    init(startsCentralManager: Bool = true) {
         super.init()
-        centralManager = CBCentralManager(delegate: self, queue: nil)
+        
+        if startsCentralManager {
+            centralManager = CBCentralManager(delegate: self, queue: nil)
+        }
     }
     
     func startScanning() {
