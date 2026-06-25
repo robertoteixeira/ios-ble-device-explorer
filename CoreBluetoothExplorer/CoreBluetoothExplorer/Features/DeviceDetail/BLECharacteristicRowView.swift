@@ -65,7 +65,7 @@ struct BLECharacteristicRowView: View {
                     } else if let utf8Display = latestValue.utf8Display {
                         Text(utf8Display)
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(.primary)
                             .textSelection(.enabled)
                     }
                 }
