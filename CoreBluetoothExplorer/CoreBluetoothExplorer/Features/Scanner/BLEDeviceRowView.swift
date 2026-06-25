@@ -23,6 +23,10 @@ struct BLEDeviceRowView: View {
             HStack {
                 Text("RSSI: \(device.rssi)")
                 
+                if let txPowerLevel = device.txPowerLevel {
+                    Text("TX: \(txPowerLevel)")
+                }
+                
                 Spacer()
                 
                 if let isConnectable = device.isConnectable {
@@ -31,6 +35,21 @@ struct BLEDeviceRowView: View {
                 }
             }
             .font(.caption)
+            
+            if device.advertisedServiceUUIDs.isEmpty == false {
+                Text("Services: \(device.advertisedServiceUUIDs.joined(separator: ", "))")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+            
+            if let manufacturerData = device.manufacturerData {
+                Text("Manufacturer: \(manufacturerData.hexDisplay)")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                    .textSelection(.enabled)
+            }
         }
         .padding(.vertical, 4)
     }

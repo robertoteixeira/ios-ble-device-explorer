@@ -199,11 +199,26 @@ extension BLECentralManager: CBCentralManagerDelegate {
         
         let isConnectable = advertisementData[CBAdvertisementDataIsConnectable] as? Bool
         
+        let advertisedServiceUUIDs = (
+            advertisementData[CBAdvertisementDataServiceUUIDsKey] as? [CBUUID]
+        )?
+            .map { $0.uuidString }
+            .sorted() ?? []
+        
+        let manufacturerData = advertisementData[CBAdvertisementDataManufacturerDataKey] as? Data
+        
+        let txPowerLevel = (
+            advertisementData[CBAdvertisementDataTxPowerLevelKey] as? NSNumber
+        )?.intValue
+        
         let device = BLEDevice(
             id: peripheral.identifier,
             name: name,
             rssi: RSSI.intValue,
-            isConnectable: isConnectable
+            isConnectable: isConnectable,
+            advertisedServiceUUIDs: advertisedServiceUUIDs,
+            manufacturerData: manufacturerData,
+            txPowerLevel: txPowerLevel
         )
         
         if let index = discoveredDevices.firstIndex(where: { $0.id == device.id }) {
