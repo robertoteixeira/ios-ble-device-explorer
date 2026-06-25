@@ -84,11 +84,11 @@ struct DeviceDetailView: View {
         switch viewModel.operationStatus {
         case .idle:
             return .secondary
-        case .inProgress(let string):
+        case .inProgress:
             return .orange
-        case .succeeded(let string):
+        case .succeeded:
             return .green
-        case .failed(let string):
+        case .failed:
             return .red
         }
     }
