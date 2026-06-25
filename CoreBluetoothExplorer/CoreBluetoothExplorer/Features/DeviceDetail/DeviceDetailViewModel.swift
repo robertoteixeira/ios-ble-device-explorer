@@ -11,6 +11,7 @@ import Combine
 @MainActor
 final class DeviceDetailViewModel: ObservableObject {
     @Published private(set) var connectionState: BLEConnectionState = .disconnected
+    @Published private(set) var operationStatus: BLEOperationStatus = .idle
     @Published private(set) var services: [BLEService] = []
     
     let device: BLEDevice
@@ -28,6 +29,10 @@ final class DeviceDetailViewModel: ObservableObject {
             .receive(on: DispatchQueue.main)
             .assign(to: &$connectionState)
         
+        bleCentralManager.$operationStatus
+            .receive(on: DispatchQueue.main)
+            .assign(to: &$operationStatus)
+        
         bleCentralManager.$services
             .receive(on: DispatchQueue.main)
             .assign(to: &$services)
@@ -36,10 +41,12 @@ final class DeviceDetailViewModel: ObservableObject {
     init(
         device: BLEDevice,
         connectionState: BLEConnectionState,
+        operationStatus: BLEOperationStatus = .idle,
         services: [BLEService]
     ) {
         self.device = device
         self.connectionState = connectionState
+        self.operationStatus = operationStatus
         self.services = services
         self.bleCentralManager = nil
     }

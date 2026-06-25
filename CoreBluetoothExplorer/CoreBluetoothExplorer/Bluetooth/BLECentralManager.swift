@@ -11,6 +11,7 @@ import CoreBluetooth
 final class BLECentralManager: NSObject, ObservableObject {
     @Published private(set) var bluetoothState: BluetoothState = .unknown
     @Published private(set) var connectionState: BLEConnectionState = .disconnected
+    @Published private(set) var operationStatus: BLEOperationStatus = .idle
     @Published private(set) var discoveredDevices: [BLEDevice] = []
     @Published private(set) var services: [BLEService] = []
     
@@ -36,7 +37,7 @@ final class BLECentralManager: NSObject, ObservableObject {
         services.removeAll()
         connectedPeripheral = nil
         discoveredCharacteristics.removeAll()
-        
+        operationStatus = .idle
         connectionState = .scanning
         
         centralManager?.scanForPeripherals(
@@ -68,6 +69,8 @@ final class BLECentralManager: NSObject, ObservableObject {
     }
     
     func disconnect() {
+        operationStatus = .idle
+        
         if let connectingPeripheral {
             centralManager?.cancelPeripheralConnection(connectingPeripheral)
             self.connectingPeripheral = nil
@@ -84,31 +87,32 @@ final class BLECentralManager: NSObject, ObservableObject {
     
     func readCharacteristic(_ characteristic: BLECharacteristic) {
         guard let connectedPeripheral else {
-            connectionState = .failed("No connected peripheral")
+            operationStatus = .failed("No connected peripheral")
             return
         }
         
         guard let cbCharacteristic = discoveredCharacteristics[characteristic.uuid] else {
-            connectionState = .failed("Characteristic not found")
+            operationStatus = .failed("Characteristic not found")
             return
         }
         
         guard cbCharacteristic.properties.contains(.read) else {
-            connectionState = .failed("Characteristic does not support read")
+            operationStatus = .failed("Characteristic does not support read")
             return
         }
         
+        operationStatus = .inProgress("Reading value")
         connectedPeripheral.readValue(for: cbCharacteristic)
     }
     
     func toggleNotify(for characteristic: BLECharacteristic) {
         guard let connectedPeripheral else {
-            connectionState = .failed("No connected peripheral")
+            operationStatus = .failed("No connected peripheral")
             return
         }
         
         guard let cbCharacteristic = discoveredCharacteristics[characteristic.uuid] else {
-            connectionState = .failed("Characteristic not found")
+            operationStatus = .failed("Characteristic not found")
             return
         }
         
@@ -116,9 +120,13 @@ final class BLECentralManager: NSObject, ObservableObject {
         let supportsIndicate = cbCharacteristic.properties.contains(CBCharacteristicProperties.indicate)
         
         guard supportsNotify || supportsIndicate else {
-            connectionState = .failed("Characteristic does not support nofity/indicate")
+            operationStatus = .failed("Characteristic does not support nofity/indicate")
             return
         }
+        
+        operationStatus = cbCharacteristic.isNotifying
+            ? .inProgress("Disabling notifications")
+            : .inProgress("Enabling notifications")
         
         connectedPeripheral.setNotifyValue(
             !cbCharacteristic.isNotifying,
@@ -128,17 +136,17 @@ final class BLECentralManager: NSObject, ObservableObject {
     
     func writeCharacteristic(_ characteristic: BLECharacteristic, hexString: String) {
         guard let value = HexDataParser.data(from: hexString) else {
-            connectionState = .failed("Invalid hex value")
+            operationStatus = .failed("Invalid hex value")
             return
         }
         
         guard let connectedPeripheral else {
-            connectionState = .failed("No connected peripheral")
+            operationStatus = .failed("No connected peripheral")
             return
         }
         
         guard let cbCharacteristic = discoveredCharacteristics[characteristic.uuid] else {
-            connectionState = .failed("Characteristic not found")
+            operationStatus = .failed("Characteristic not found")
             return
         }
         
@@ -146,17 +154,23 @@ final class BLECentralManager: NSObject, ObservableObject {
         let supportsWriteWithoutResponse = cbCharacteristic.properties.contains(.writeWithoutResponse)
         
         guard supportsWrite || supportsWriteWithoutResponse else {
-            connectionState = .failed("Characterist does not support write")
+            operationStatus = .failed("Characterist does not support write")
             return
         }
         
         let writeType: CBCharacteristicWriteType = supportsWrite ? .withResponse : .withoutResponse
+        
+        operationStatus = .inProgress("Writing value")
         
         connectedPeripheral.writeValue(
             value,
             for: cbCharacteristic,
             type: writeType
         )
+        
+        if writeType == .withoutResponse {
+            operationStatus = .succeeded("Write send without response")
+        }
     }
 }
 
@@ -233,6 +247,7 @@ extension BLECentralManager: CBCentralManagerDelegate {
         connectedPeripheral = nil
         services.removeAll()
         discoveredCharacteristics.removeAll()
+        operationStatus = .idle
         
         if let error {
             connectionState = .failed(error.localizedDescription)
@@ -307,7 +322,7 @@ extension BLECentralManager: CBPeripheralDelegate {
         error: Error?
     ) {
         if let error {
-            connectionState = .failed(error.localizedDescription)
+            operationStatus = .failed(error.localizedDescription)
             return
         }
         
@@ -326,6 +341,8 @@ extension BLECentralManager: CBPeripheralDelegate {
             
             return updatedService
         }
+        
+        operationStatus = .succeeded("Value updated")
     }
     
     func peripheral(
@@ -334,7 +351,7 @@ extension BLECentralManager: CBPeripheralDelegate {
         error: Error?
     ) {
         if let error {
-            connectionState = .failed(error.localizedDescription)
+            operationStatus = .failed(error.localizedDescription)
             return
         }
         
@@ -352,6 +369,10 @@ extension BLECentralManager: CBPeripheralDelegate {
             }
             return updatedService
         }
+        
+        operationStatus = updatedCharacteristic.isNotifying
+        ? .succeeded("Notifications enabled")
+        : .succeeded("Notifications disabled")
     }
     
     func peripheral(
@@ -360,11 +381,11 @@ extension BLECentralManager: CBPeripheralDelegate {
         error: Error?
     ) {
         if let error {
-            connectionState = .failed(error.localizedDescription)
+            operationStatus = .failed(error.localizedDescription)
             return
         }
         
-        connectionState = .ready
+        operationStatus = .succeeded("Write succeeded")
     }
 }
 

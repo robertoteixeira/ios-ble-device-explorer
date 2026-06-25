@@ -32,6 +32,13 @@ struct DeviceDetailView: View {
                 LabeledContent("Identifier", value: viewModel.device.id.uuidString)
                 LabeledContent("RSSI", value: "\(viewModel.device.rssi)")
                 LabeledContent("Connection", value: viewModel.connectionState.displayName)
+                
+                if let operationStatusMessage = viewModel.operationStatus.displayName {
+                    LabeledContent("Last Action") {
+                        Text(operationStatusMessage)
+                            .foregroundStyle(operationStatusForegroundStyle)
+                    }
+                }
             } header: {
                 Text("Device")
             }
@@ -73,6 +80,19 @@ struct DeviceDetailView: View {
         }
     }
     
+    private var operationStatusForegroundStyle: Color {
+        switch viewModel.operationStatus {
+        case .idle:
+            return .secondary
+        case .inProgress(let string):
+            return .orange
+        case .succeeded(let string):
+            return .green
+        case .failed(let string):
+            return .red
+        }
+    }
+    
     private var showsDisconnectButton: Bool {
         switch viewModel.connectionState {
         case .connecting, .connected, .discoveringServices, .discoveringCharacteristics, .ready:
@@ -91,6 +111,7 @@ struct DeviceDetailView_Previews: PreviewProvider {
                     viewModel: DeviceDetailViewModel(
                         device: PreviewFixtures.heartRateMonitor,
                         connectionState: .ready,
+                        operationStatus: .succeeded("Value updated"),
                         services: PreviewFixtures.services
                     )
                 )
