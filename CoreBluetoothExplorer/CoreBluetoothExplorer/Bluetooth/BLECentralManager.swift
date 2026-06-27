@@ -19,6 +19,7 @@ final class BLECentralManager: NSObject, ObservableObject {
     private var discoveredPeripherals: [UUID: CBPeripheral] = [:]
     private var connectingPeripheral: CBPeripheral?
     private var connectedPeripheral: CBPeripheral?
+    private var irrigationPeripheral: CBPeripheral?
     private var discoveredCharacteristics: [String: CBCharacteristic] = [:]
     private var scanMode: BLEScanMode = .explorer
     
@@ -51,6 +52,7 @@ final class BLECentralManager: NSObject, ObservableObject {
         discoveredPeripherals.removeAll()
         services.removeAll()
         connectedPeripheral = nil
+        irrigationPeripheral = nil
         discoveredCharacteristics.removeAll()
         operationStatus = .idle
         connectionState = .scanning
@@ -87,6 +89,12 @@ final class BLECentralManager: NSObject, ObservableObject {
         
         stopScanning()
         connectingPeripheral = peripheral
+        
+        if scanMode == .irrigation {
+            irrigationPeripheral = peripheral
+            irrigationPeripheral?.delegate = self
+        }
+        
         connectionState = .connecting
         centralManager?.connect(peripheral)
     }
@@ -105,6 +113,7 @@ final class BLECentralManager: NSObject, ObservableObject {
             connectionState = .disconnected
             services.removeAll()
             discoveredCharacteristics.removeAll()
+            irrigationPeripheral = nil
         }
     }
     
@@ -257,9 +266,17 @@ extension BLECentralManager: CBCentralManagerDelegate {
         _ central: CBCentralManager,
         didConnect peripheral: CBPeripheral
     ) {
+        print("BLE didConnect peripheral=\(peripheral.identifier) mode=\(scanMode)")
+        
         connectingPeripheral = nil
         connectedPeripheral = peripheral
-        peripheral.delegate = self
+        
+        if scanMode == .irrigation {
+            irrigationPeripheral = peripheral
+            irrigationPeripheral?.delegate = self
+        } else {
+            peripheral.delegate = self
+        }
         
         connectionState = .discoveringServices
         services.removeAll()
@@ -272,8 +289,6 @@ extension BLECentralManager: CBCentralManagerDelegate {
             operationStatus = .inProgress("Discovering irrigation service")
             peripheral.discoverServices([Self.irrigationServiceUUID])
         }
-        
-        peripheral.discoverServices(nil)
     }
     
     func centralManager(
@@ -281,6 +296,10 @@ extension BLECentralManager: CBCentralManagerDelegate {
         didFailToConnect peripheral: CBPeripheral,
         error: Error?
     ) {
+        print(
+            "BLE didFailToConnect peripheral=\(peripheral.identifier) error=\(error?.localizedDescription ?? "nil")"
+        )
+        
         connectingPeripheral = nil
         connectionState = .failed(error?.localizedDescription ?? "Failed to connect")
     }
@@ -290,8 +309,13 @@ extension BLECentralManager: CBCentralManagerDelegate {
         didDisconnectPeripheral peripheral: CBPeripheral,
         error: Error?
     ) {
+        print(
+            "BLE didDisconnectPeripheral peripheral=\(peripheral.identifier) error=\(error?.localizedDescription ?? "nil")"
+        )
+        
         connectingPeripheral = nil
         connectedPeripheral = nil
+        irrigationPeripheral = nil
         services.removeAll()
         discoveredCharacteristics.removeAll()
         operationStatus = .idle
@@ -307,6 +331,10 @@ extension BLECentralManager: CBCentralManagerDelegate {
 // MARK: - CBPeripheralDelegate
 extension BLECentralManager: CBPeripheralDelegate {
     func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
+        print(
+            "BLE didDiscoverServices peripheral=\(peripheral.identifier) mode=\(scanMode) services=\(peripheral.services?.map { $0.uuid.uuidString } ?? []) error=\(error?.localizedDescription ?? "nil")"
+        )
+        
         if let error {
             connectionState = .failed(error.localizedDescription)
             return
@@ -360,6 +388,10 @@ extension BLECentralManager: CBPeripheralDelegate {
         didDiscoverCharacteristicsFor service: CBService,
         error: Error?
     ) {
+        print(
+            "BLE didDiscoverCharacteristicsFor service=\(service.uuid.uuidString) mode=\(scanMode) characteristics=\(service.characteristics?.map { $0.uuid.uuidString } ?? []) error=\(error?.localizedDescription ?? "nil")"
+        )
+        
         if let error {
             connectionState = .failed(error.localizedDescription)
             return
@@ -422,6 +454,10 @@ extension BLECentralManager: CBPeripheralDelegate {
         didUpdateValueFor characteristic: CBCharacteristic,
         error: Error?
     ) {
+        print(
+            "BLE didUpdateValueFor characteristic=\(characteristic.uuid.uuidString) mode=\(scanMode) value=\(characteristic.value?.hexDisplay ?? "nil") error=\(error?.localizedDescription ?? "nil")"
+        )
+        
         if let error {
             operationStatus = .failed(error.localizedDescription)
             return
@@ -454,13 +490,11 @@ extension BLECentralManager: CBPeripheralDelegate {
             if let data = characteristic.value,
                let firmwareVersion = String(data: data, encoding: .utf8) {
                 operationStatus = .succeeded("Firmware: \(firmwareVersion)")
-                print(firmwareVersion)
+                print("Firmware:", firmwareVersion)
             } else {
                 operationStatus = .failed("Unable to decode firmware version")
             }
         }
-        
-        operationStatus = .succeeded("Value updated")
     }
     
     func peripheral(
