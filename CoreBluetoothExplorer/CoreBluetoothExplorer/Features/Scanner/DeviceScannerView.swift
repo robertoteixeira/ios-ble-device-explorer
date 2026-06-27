@@ -45,8 +45,16 @@ struct DeviceScannerView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Menu {
-                        Toggle("Show Unknown Devices", isOn: $viewModel.showsUnknownDevices)
-                        Toggle("Only Connectable Devices", isOn: $viewModel.showsOnlyConnectableDevices)
+                        Section("Scan") {
+                            Button("Scan Irrigation Device") {
+                                viewModel.startIrrigationScanning()
+                            }
+                            .disabled(viewModel.bluetoothState != .poweredOn)
+                        }                        
+                        Section("Filters") {
+                            Toggle("Show Unknown Devices", isOn: $viewModel.showsUnknownDevices)
+                            Toggle("Only Connectable Devices", isOn: $viewModel.showsOnlyConnectableDevices)
+                        }
                     } label: {
                         Image(systemName: "line.3.horizontal.decrease.circle")
                     }

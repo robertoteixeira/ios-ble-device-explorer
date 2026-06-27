@@ -72,6 +72,10 @@ final class DeviceScannerViewModel: ObservableObject {
         bleCentralManager.startScanning()
     }
     
+    func startIrrigationScanning() {
+        bleCentralManager.startScanning(mode: .irrigation)
+    }
+    
     func stopScanning() {
         bleCentralManager.stopScanning()
     }

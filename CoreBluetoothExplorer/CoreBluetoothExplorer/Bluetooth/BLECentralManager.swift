@@ -20,6 +20,15 @@ final class BLECentralManager: NSObject, ObservableObject {
     private var connectingPeripheral: CBPeripheral?
     private var connectedPeripheral: CBPeripheral?
     private var discoveredCharacteristics: [String: CBCharacteristic] = [:]
+    private var scanMode: BLEScanMode = .explorer
+    
+    private static let irrigationServiceUUID = CBUUID(
+        string: "7b6a0001-4f7a-4f2e-9f1b-91b0f3c7d001"
+    )
+
+    private static let firmwareCharacteristicUUID = CBUUID(
+        string: "7b6a0002-4f7a-4f2e-9f1b-91b0f3c7d001"
+    )
     
     init(startsCentralManager: Bool = true) {
         super.init()
@@ -30,7 +39,13 @@ final class BLECentralManager: NSObject, ObservableObject {
     }
     
     func startScanning() {
+        startScanning(mode: .explorer)
+    }
+    
+    func startScanning(mode: BLEScanMode) {
         guard bluetoothState == .poweredOn else { return }
+        
+        scanMode = mode
         
         discoveredDevices.removeAll()
         discoveredPeripherals.removeAll()
@@ -40,12 +55,20 @@ final class BLECentralManager: NSObject, ObservableObject {
         operationStatus = .idle
         connectionState = .scanning
         
-        centralManager?.scanForPeripherals(
-            withServices: nil,
-            options: [
-                CBCentralManagerScanOptionAllowDuplicatesKey: false
-            ]
-        )
+        switch mode {
+        case .explorer:
+            centralManager?.scanForPeripherals(
+                withServices: nil,
+                options: [
+                    CBCentralManagerScanOptionAllowDuplicatesKey: false
+                ]
+            )
+        case .irrigation:
+            centralManager?.scanForPeripherals(
+                withServices: [Self.irrigationServiceUUID],
+                options: nil
+            )
+        }
     }
     
     func stopScanning() {
@@ -240,6 +263,15 @@ extension BLECentralManager: CBCentralManagerDelegate {
         
         connectionState = .discoveringServices
         services.removeAll()
+        discoveredCharacteristics.removeAll()
+        
+        switch scanMode {
+        case .explorer:
+            peripheral.discoverServices(nil)
+        case .irrigation:
+            operationStatus = .inProgress("Discovering irrigation service")
+            peripheral.discoverServices([Self.irrigationServiceUUID])
+        }
         
         peripheral.discoverServices(nil)
     }
@@ -280,22 +312,47 @@ extension BLECentralManager: CBPeripheralDelegate {
             return
         }
         
-        let discoveredServices = peripheral.services ?? []
-        
-        services = discoveredServices.map {
-            BLEService(service: $0)
+        switch scanMode {
+        case .explorer:
+            let discoveredServices = peripheral.services ?? []
+            
+            services = discoveredServices.map {
+                BLEService(service: $0)
+            }
+            
+            guard !discoveredServices.isEmpty else {
+                connectionState = .ready
+                return
+            }
+            
+            connectionState = .discoveringCharacteristics
+            
+            for service in discoveredServices {
+                peripheral.discoverCharacteristics(nil, for: service)
+            }
+            
+        case .irrigation:
+            guard let irrigationService = peripheral.services?.first(where: {
+                $0.uuid == Self.irrigationServiceUUID
+            }) else {
+                connectionState = .failed("Irrigation service not found")
+                return
+            }
+            
+            services = [
+                BLEService(service: irrigationService)
+            ]
+            
+            connectionState = .discoveringCharacteristics
+            operationStatus = .inProgress("Discovering firmware characteristic")
+            
+            peripheral.discoverCharacteristics(
+                [Self.firmwareCharacteristicUUID],
+                for: irrigationService
+            )
         }
         
-        guard !discoveredServices.isEmpty else {
-            connectionState = .ready
-            return
-        }
-        
-        connectionState = .discoveringCharacteristics
-        
-        for service in discoveredServices {
-            peripheral.discoverCharacteristics(nil, for: service)
-        }
+
     }
     
     func peripheral(
@@ -308,26 +365,55 @@ extension BLECentralManager: CBPeripheralDelegate {
             return
         }
         
-        let characteristics = service.characteristics ?? []
-        
-        for characteristic in characteristics {
-            discoveredCharacteristics[characteristic.uuid.uuidString] = characteristic
-        }
-        
-        let mappedCharacteristics = characteristics.map {
-            BLECharacteristic(characteristic: $0)
-        }
-        
-        if let index = services.firstIndex(where: { $0.uuid == service.uuid.uuidString }) {
-            services[index].characteristics = mappedCharacteristics
-        }
-        
-        let allServicesHaveCharacteristics = peripheral.services?.allSatisfy { service in
-            service.characteristics != nil
-        } ?? true
-        
-        if allServicesHaveCharacteristics {
+        switch scanMode {
+        case .explorer:
+            let characteristics = service.characteristics ?? []
+            
+            for characteristic in characteristics {
+                discoveredCharacteristics[characteristic.uuid.uuidString] = characteristic
+            }
+            
+            let mappedCharacteristics = characteristics.map {
+                BLECharacteristic(characteristic: $0)
+            }
+            
+            if let index = services.firstIndex(where: { $0.uuid == service.uuid.uuidString }) {
+                services[index].characteristics = mappedCharacteristics
+            }
+            
+            let allServicesHaveCharacteristics = peripheral.services?.allSatisfy { service in
+                service.characteristics != nil
+            } ?? true
+            
+            if allServicesHaveCharacteristics {
+                connectionState = .ready
+            }
+        case .irrigation:
+            guard service.uuid == Self.irrigationServiceUUID else {
+                return
+            }
+            
+            guard let firmwareCharacteristic = service.characteristics?.first(where: {
+                $0.uuid == Self.firmwareCharacteristicUUID
+            }) else {
+                connectionState = .failed("Firmware characteristc not found")
+                return
+            }
+            
+            discoveredCharacteristics = [
+                firmwareCharacteristic.uuid.uuidString: firmwareCharacteristic
+            ]
+            
+            let mappedCharacteristic = BLECharacteristic(characteristic: firmwareCharacteristic)
+            
+            if let index = services.firstIndex(where: { $0.uuid == service.uuid.uuidString }) {
+                services[index].characteristics = [mappedCharacteristic]
+            }
+            
             connectionState = .ready
+            operationStatus = .inProgress("Reading firmware version")
+            
+            peripheral.readValue(for: firmwareCharacteristic)
         }
     }
     
@@ -355,6 +441,23 @@ extension BLECentralManager: CBPeripheralDelegate {
             }
             
             return updatedService
+        }
+        
+        switch scanMode {
+        case .explorer:
+            operationStatus = .succeeded("Value updated")
+        case .irrigation:
+            guard characteristic.uuid == Self.firmwareCharacteristicUUID else {
+                return
+            }
+            
+            if let data = characteristic.value,
+               let firmwareVersion = String(data: data, encoding: .utf8) {
+                operationStatus = .succeeded("Firmware: \(firmwareVersion)")
+                print(firmwareVersion)
+            } else {
+                operationStatus = .failed("Unable to decode firmware version")
+            }
         }
         
         operationStatus = .succeeded("Value updated")
