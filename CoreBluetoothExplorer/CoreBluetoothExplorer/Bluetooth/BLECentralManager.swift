@@ -340,10 +340,13 @@ extension BLECentralManager: CBPeripheralDelegate {
             return
         }
         
+        var seenServiceUUIDs = Set<String>()
+        let discoveredServices = (peripheral.services ?? []).filter { service in
+            seenServiceUUIDs.insert(service.uuid.uuidString).inserted
+        }
+        
         switch scanMode {
         case .explorer:
-            let discoveredServices = peripheral.services ?? []
-            
             services = discoveredServices.map {
                 BLEService(service: $0)
             }
@@ -360,7 +363,7 @@ extension BLECentralManager: CBPeripheralDelegate {
             }
             
         case .irrigation:
-            guard let irrigationService = peripheral.services?.first(where: {
+            guard let irrigationService = discoveredServices.first(where: {
                 $0.uuid == Self.irrigationServiceUUID
             }) else {
                 connectionState = .failed("Irrigation service not found")
@@ -454,14 +457,17 @@ extension BLECentralManager: CBPeripheralDelegate {
         didUpdateValueFor characteristic: CBCharacteristic,
         error: Error?
     ) {
-        print(
-            "BLE didUpdateValueFor characteristic=\(characteristic.uuid.uuidString) mode=\(scanMode) value=\(characteristic.value?.hexDisplay ?? "nil") error=\(error?.localizedDescription ?? "nil")"
-        )
-        
         if let error {
+            print(
+                "BLE didUpdateValueFor characteristic=\(characteristic.uuid.uuidString) mode=\(scanMode) error=\(error.localizedDescription)"
+            )
             operationStatus = .failed(error.localizedDescription)
             return
         }
+        
+        print(
+            "BLE didUpdateValueFor characteristic=\(characteristic.uuid.uuidString) mode=\(scanMode) value=\(characteristic.value?.hexDisplay ?? "nil") error=nil"
+        )
         
         let updatedCharacteristic = BLECharacteristic(characteristic: characteristic)
         
