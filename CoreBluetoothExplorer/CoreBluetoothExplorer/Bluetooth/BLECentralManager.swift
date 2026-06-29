@@ -148,6 +148,11 @@ final class BLECentralManager: NSObject, ObservableObject {
             return
         }
         
+        guard cbCharacteristic.uuid != Self.firmwareCharacteristicUUID else {
+            operationStatus = .failed("Firmware characteristic is read-only")
+            return
+        }
+        
         let supportsNotify = cbCharacteristic.properties.contains(CBCharacteristicProperties.notify)
         let supportsIndicate = cbCharacteristic.properties.contains(CBCharacteristicProperties.indicate)
         
@@ -432,6 +437,11 @@ extension BLECentralManager: CBPeripheralDelegate {
                 $0.uuid == Self.firmwareCharacteristicUUID
             }) else {
                 connectionState = .failed("Firmware characteristc not found")
+                return
+            }
+            
+            guard firmwareCharacteristic.properties.contains(.read) else {
+                connectionState = .failed("Firmware characteristic does not support read")
                 return
             }
             
