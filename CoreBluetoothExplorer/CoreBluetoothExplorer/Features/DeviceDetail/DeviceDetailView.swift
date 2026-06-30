@@ -67,6 +67,22 @@ struct DeviceDetailView: View {
                     )
                 }
             }
+            
+            Section {
+                BLEEventLogView(events: viewModel.events)
+            } header: {
+                HStack {
+                    Text("Event Log")
+                    
+                    Spacer()
+                    
+                    Button("Clear") {
+                        viewModel.clearEvents()
+                    }
+                    .font(.caption)
+                    .disabled(viewModel.events.isEmpty)
+                }
+            }
         }
         .navigationTitle("Device Details")
         .toolbar {
@@ -112,7 +128,8 @@ struct DeviceDetailView_Previews: PreviewProvider {
                         device: PreviewFixtures.heartRateMonitor,
                         connectionState: .ready,
                         operationStatus: .succeeded("Value updated"),
-                        services: PreviewFixtures.services
+                        services: PreviewFixtures.services,
+                        events: PreviewFixtures.events
                     )
                 )
             }

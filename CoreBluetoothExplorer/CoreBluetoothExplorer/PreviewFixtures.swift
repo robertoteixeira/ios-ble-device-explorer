@@ -77,4 +77,25 @@ enum PreviewFixtures {
             ]
         )
     ]
+    
+    static let events = [
+        BLEEvent(
+            date: Date(timeIntervalSinceReferenceDate: 806_000_245),
+            level: .success,
+            title: "Value Updated",
+            message: "2A19 58"
+        ),
+        BLEEvent(
+            date: Date(timeIntervalSinceReferenceDate: 806_000_240),
+            level: .info,
+            title: "Read Started",
+            message: "2A19"
+        ),
+        BLEEvent(
+            date: Date(timeIntervalSinceReferenceDate: 806_000_236),
+            level: .success,
+            title: "Characteristics Discovered",
+            message: "1 in 180F"
+        )
+    ]
 }

@@ -13,6 +13,7 @@ final class DeviceScannerViewModel: ObservableObject {
     @Published private(set) var bluetoothState: BluetoothState = .unknown
     @Published private(set) var connectionState: BLEConnectionState = .disconnected
     @Published private(set) var devices: [BLEDevice] = []
+    @Published private(set) var events: [BLEEvent] = []
     @Published var showsUnknownDevices = true
     @Published var showsOnlyConnectableDevices = false
     
@@ -33,18 +34,24 @@ final class DeviceScannerViewModel: ObservableObject {
         bleCentralManager.$discoveredDevices
             .receive(on: DispatchQueue.main)
             .assign(to: &$devices)
+        
+        bleCentralManager.$events
+            .receive(on: DispatchQueue.main)
+            .assign(to: &$events)
     }
     
     init(
         bluetoothState: BluetoothState,
         connectionState: BLEConnectionState,
         devices: [BLEDevice],
+        events: [BLEEvent] = [],
         showsUnknownDevices: Bool = true,
         showsOnlyConnectableDevices: Bool = false
     ) {
         self.bluetoothState = bluetoothState
         self.connectionState = connectionState
         self.devices = devices
+        self.events = events
         self.showsUnknownDevices = showsUnknownDevices
         self.showsOnlyConnectableDevices = showsOnlyConnectableDevices
         self.bleCentralManager = BLECentralManager(startsCentralManager: false)
@@ -82,5 +89,9 @@ final class DeviceScannerViewModel: ObservableObject {
     
     func connect(to device: BLEDevice) {
         bleCentralManager.connect(to: device)
+    }
+    
+    func clearEvents() {
+        bleCentralManager.clearEvents()
     }
 }

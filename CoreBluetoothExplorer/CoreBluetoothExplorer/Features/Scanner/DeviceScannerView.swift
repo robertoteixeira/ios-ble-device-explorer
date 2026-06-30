@@ -9,6 +9,7 @@ import SwiftUI
 
 struct DeviceScannerView: View {
     @StateObject private var viewModel: DeviceScannerViewModel
+    @State private var showsEventLog = false
     
     init(bleCentralManager: BLECentralManager) {
         _viewModel = StateObject(
@@ -60,7 +61,38 @@ struct DeviceScannerView: View {
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showsEventLog = true
+                    } label: {
+                        Image(systemName: "list.bullet.clipboard")
+                    }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
                     scanButton
+                }
+            }
+            .sheet(isPresented: $showsEventLog) {
+                NavigationStack {
+                    List {
+                        Section {
+                            BLEEventLogView(events: viewModel.events)
+                        }
+                    }
+                    .navigationTitle("Event Log")
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Done") {
+                                showsEventLog = false
+                            }
+                        }
+                        
+                        ToolbarItem(placement: .topBarTrailing) {
+                            Button("Clear") {
+                                viewModel.clearEvents()
+                            }
+                            .disabled(viewModel.events.isEmpty)
+                        }
+                    }
                 }
             }
         }
@@ -117,7 +149,8 @@ struct DeviceScannerView_Previews: PreviewProvider {
                 viewModel: DeviceScannerViewModel(
                     bluetoothState: .poweredOn,
                     connectionState: .scanning,
-                    devices: PreviewFixtures.devices
+                    devices: PreviewFixtures.devices,
+                    events: PreviewFixtures.events
                 )
             )
             .previewDisplayName("Scanning")

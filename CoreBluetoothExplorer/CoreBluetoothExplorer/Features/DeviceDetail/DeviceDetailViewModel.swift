@@ -13,6 +13,7 @@ final class DeviceDetailViewModel: ObservableObject {
     @Published private(set) var connectionState: BLEConnectionState = .disconnected
     @Published private(set) var operationStatus: BLEOperationStatus = .idle
     @Published private(set) var services: [BLEService] = []
+    @Published private(set) var events: [BLEEvent] = []
     
     let device: BLEDevice
     
@@ -36,18 +37,24 @@ final class DeviceDetailViewModel: ObservableObject {
         bleCentralManager.$services
             .receive(on: DispatchQueue.main)
             .assign(to: &$services)
+        
+        bleCentralManager.$events
+            .receive(on: DispatchQueue.main)
+            .assign(to: &$events)
     }
     
     init(
         device: BLEDevice,
         connectionState: BLEConnectionState,
         operationStatus: BLEOperationStatus = .idle,
-        services: [BLEService]
+        services: [BLEService],
+        events: [BLEEvent] = []
     ) {
         self.device = device
         self.connectionState = connectionState
         self.operationStatus = operationStatus
         self.services = services
+        self.events = events
         self.bleCentralManager = nil
     }
     
@@ -65,5 +72,9 @@ final class DeviceDetailViewModel: ObservableObject {
     
     func disconnect() {
         bleCentralManager?.disconnect()
+    }
+    
+    func clearEvents() {
+        bleCentralManager?.clearEvents()
     }
 }
